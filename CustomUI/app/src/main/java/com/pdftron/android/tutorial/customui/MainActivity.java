@@ -14,6 +14,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.pdftron.android.tutorial.customui.custom.CustomAnnotationToolbar;
 import com.pdftron.android.tutorial.customui.custom.CustomLinkClick;
 import com.pdftron.android.tutorial.customui.custom.CustomQuickMenu;
+import com.pdftron.collab.ui.viewer.CollabViewerBuilder2;
 import com.pdftron.fdf.FDFDoc;
 import com.pdftron.pdf.Annot;
 import com.pdftron.pdf.PDFDoc;
@@ -48,24 +49,12 @@ public class MainActivity extends AppCompatActivity implements PdfViewCtrlTabHos
         // Instantiate a PdfViewCtrlTabHostFragment with a document Uri
         File f = Utils.copyResourceToLocal(this, R.raw.sample, "sample", ".pdf");
         Uri uri = Uri.fromFile(f);
-        ViewerConfig viewerConfig = new ViewerConfig.Builder()
-                .addToolbarBuilder(buildNotesToolbar())
-                .addToolbarBuilder(buildShapesToolbar())
-                .toolbarTitle("٩(◕‿◕｡)۶")
-                .fullscreenModeEnabled(false)
-                .build();
-        mPdfViewCtrlTabHostFragment = ViewerBuilder2.withUri(uri)
-                .usingCustomToolbar(new int[]{R.menu.my_custom_options_toolbar})
-                .usingNavIcon(R.drawable.ic_star_white_24dp)
-                .usingConfig(viewerConfig)
-                .usingTheme(R.style.MyCustomAppTheme)
-                .build(this);
+
+        mPdfViewCtrlTabHostFragment = CollabViewerBuilder2.withUri(uri)
+               .build(this);
+
         mPdfViewCtrlTabHostFragment.addHostListener(this);
 
-        // Apply customizations to tab host fragment
-        new CustomQuickMenu(MainActivity.this, mPdfViewCtrlTabHostFragment);
-        new CustomLinkClick(MainActivity.this, mPdfViewCtrlTabHostFragment);
-        new CustomAnnotationToolbar(MainActivity.this, mPdfViewCtrlTabHostFragment);
 
         // Add the fragment to our activity
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
