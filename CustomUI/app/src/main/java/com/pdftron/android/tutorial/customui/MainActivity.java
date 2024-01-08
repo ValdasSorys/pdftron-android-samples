@@ -14,6 +14,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.pdftron.android.tutorial.customui.custom.CustomAnnotationToolbar;
 import com.pdftron.android.tutorial.customui.custom.CustomLinkClick;
 import com.pdftron.android.tutorial.customui.custom.CustomQuickMenu;
+import com.pdftron.collab.ui.viewer.CollabViewerBuilder2;
 import com.pdftron.fdf.FDFDoc;
 import com.pdftron.pdf.Annot;
 import com.pdftron.pdf.PDFDoc;
@@ -30,6 +31,8 @@ import com.pdftron.pdf.widget.toolbar.component.DefaultToolbars;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,17 +51,28 @@ public class MainActivity extends AppCompatActivity implements PdfViewCtrlTabHos
         // Instantiate a PdfViewCtrlTabHostFragment with a document Uri
         File f = Utils.copyResourceToLocal(this, R.raw.sample, "sample", ".pdf");
         Uri uri = Uri.fromFile(f);
+        String[] toolbarsToHide = {DefaultToolbars.TAG_PREPARE_FORM_TOOLBAR, DefaultToolbars.TAG_REDACTION_TOOLBAR};
         ViewerConfig viewerConfig = new ViewerConfig.Builder()
-                .addToolbarBuilder(buildNotesToolbar())
-                .addToolbarBuilder(buildShapesToolbar())
-                .toolbarTitle("٩(◕‿◕｡)۶")
                 .fullscreenModeEnabled(false)
+                .multiTabEnabled(false)
+                .showCloseTabOption(false)
+                .showPrintOption(false)
+                .showSaveCopyOption(false)
+                .showEditPagesOption(false)
+                .userBookmarksListEditingEnabled(false)
+                .annotationsListEditingEnabled(false)
+                .hideToolbars(toolbarsToHide)
+                .showOutlineList(false)
+                .showAnnotationsList(false)
+                .showBookmarksView(false)
+                .showBottomToolbar(false) // UI issues probably caused by this line
                 .build();
-        mPdfViewCtrlTabHostFragment = ViewerBuilder2.withUri(uri)
-                .usingCustomToolbar(new int[]{R.menu.my_custom_options_toolbar})
+        // Issue happens with `ViewerBuilder2` as well
+        mPdfViewCtrlTabHostFragment = CollabViewerBuilder2.withUri(uri)
+                // .usingCustomToolbar(new int[]{R.menu.my_custom_options_toolbar})
                 .usingNavIcon(R.drawable.ic_star_white_24dp)
                 .usingConfig(viewerConfig)
-                .usingTheme(R.style.MyCustomAppTheme)
+                // .usingTheme(R.style.MyCustomAppTheme)
                 .build(this);
         mPdfViewCtrlTabHostFragment.addHostListener(this);
 
