@@ -14,11 +14,14 @@ import androidx.fragment.app.FragmentTransaction;
 import com.pdftron.android.tutorial.customui.custom.CustomAnnotationToolbar;
 import com.pdftron.android.tutorial.customui.custom.CustomLinkClick;
 import com.pdftron.android.tutorial.customui.custom.CustomQuickMenu;
+import com.pdftron.collab.ui.viewer.CollabViewerBuilder2;
+import com.pdftron.collab.ui.viewer.CollabViewerTabHostFragment2;
+import com.pdftron.common.PDFNetException;
 import com.pdftron.fdf.FDFDoc;
 import com.pdftron.pdf.Annot;
 import com.pdftron.pdf.PDFDoc;
+import com.pdftron.pdf.PDFViewCtrl;
 import com.pdftron.pdf.annots.Markup;
-import com.pdftron.pdf.config.ViewerBuilder2;
 import com.pdftron.pdf.config.ViewerConfig;
 import com.pdftron.pdf.controls.PdfViewCtrlTabHostFragment2;
 import com.pdftron.pdf.model.FileInfo;
@@ -35,7 +38,7 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements PdfViewCtrlTabHostFragment2.TabHostListener {
 
-    private PdfViewCtrlTabHostFragment2 mPdfViewCtrlTabHostFragment;
+    private CollabViewerTabHostFragment2 mPdfViewCtrlTabHostFragment;
 
     public static final String NOTES_TOOLBAR_TAG = "notes_toolbar";
     public static final String SHAPES_TOOLBAR_TAG = "shapes_toolbar";
@@ -49,16 +52,12 @@ public class MainActivity extends AppCompatActivity implements PdfViewCtrlTabHos
         File f = Utils.copyResourceToLocal(this, R.raw.sample, "sample", ".pdf");
         Uri uri = Uri.fromFile(f);
         ViewerConfig viewerConfig = new ViewerConfig.Builder()
-                .addToolbarBuilder(buildNotesToolbar())
-                .addToolbarBuilder(buildShapesToolbar())
-                .toolbarTitle("٩(◕‿◕｡)۶")
                 .fullscreenModeEnabled(false)
+                .multiTabEnabled(false)
                 .build();
-        mPdfViewCtrlTabHostFragment = ViewerBuilder2.withUri(uri)
-                .usingCustomToolbar(new int[]{R.menu.my_custom_options_toolbar})
+        mPdfViewCtrlTabHostFragment = CollabViewerBuilder2.withUri(uri)
                 .usingNavIcon(R.drawable.ic_star_white_24dp)
                 .usingConfig(viewerConfig)
-                .usingTheme(R.style.MyCustomAppTheme)
                 .build(this);
         mPdfViewCtrlTabHostFragment.addHostListener(this);
 
@@ -108,6 +107,32 @@ public class MainActivity extends AppCompatActivity implements PdfViewCtrlTabHos
     @Override
     public void onTabDocumentLoaded(String s) {
         if (mPdfViewCtrlTabHostFragment != null && mPdfViewCtrlTabHostFragment.getCurrentPdfViewCtrlFragment() != null) {
+            // xfdf that contains one `Underline` text annotation
+            String myXfdf = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                    "<xfdf xmlns=\"http://ns.adobe.com/xfdf/\" xml:space=\"preserve\">\n" +
+                    "\t<annots>\n" +
+                    "\t\t<underline style=\"solid\" width=\"1.5\" color=\"#E44234\" opacity=\"1\" creationdate=\"D:20240110131152Z\" flags=\"print\" date=\"D:20240110131156Z\" name=\"e5d4e1fb-4b45-4451-a8c9-b74ca363a8b8\" page=\"0\" coords=\"64.881,747.417,234.414,747.417,64.881,716.205,234.414,716.205\" rect=\"59.7095,715.455,239.5855,747.417\" subject=\"New Subject\" title=\"someId\">\n" +
+                    "\t\t\t<trn-custom-data bytes=\"{&quot;contactId&quot;:&quot;70b8cf72-3109-4803-aabe-3ff72f955594&quot;}\" />\n" +
+                    "\t\t\t<popup date=\"D:20240110131152Z\" page=\"0\" rect=\"58.199,716.205,292.099,747.417\" />\n" +
+                    "\t\t\t<contents>A Simple PDF</contents>\n" +
+                    "\t\t</underline>\n" +
+                    "\t</annots>\n" +
+                    "\t<pages>\n" +
+                    "\t\t<defmtx matrix=\"1.333333,0.000000,0.000000,-1.333333,0.000000,1056.000000\" />\n" +
+                    "\t</pages>\n" +
+                    "\t<pdf-info import-version=\"4\" version=\"2\" xmlns=\"http://www.pdftron.com/pdfinfo\" />\n" +
+                    "</xfdf>";
+
+            try {
+                FDFDoc myFDFDoc = FDFDoc.createFromXFDF(myXfdf);
+                String idk = myFDFDoc.saveAsXFDF();
+                mPdfViewCtrlTabHostFragment.getCollabManager().setCurrentUser("someId", "Name");
+                mPdfViewCtrlTabHostFragment.getCollabManager().setCurrentDocument("1");
+                mPdfViewCtrlTabHostFragment.getCollabManager().importAnnotationCommand(idk, true);
+            } catch (PDFNetException e) {
+                throw new RuntimeException(e);
+            }
+
             ToolManager tm = mPdfViewCtrlTabHostFragment.getCurrentPdfViewCtrlFragment().getToolManager();
             tm.addAnnotationModificationListener(new ToolManager.AnnotationModificationListener() {
                 @Override
@@ -123,6 +148,27 @@ public class MainActivity extends AppCompatActivity implements PdfViewCtrlTabHos
                 @Override
                 public void onAnnotationsModified(Map<Annot, Integer> annots, Bundle extra) {
                     demoExtraAnnotData("onAnnotationsModified", annots);
+
+                    Annot myAnnot = annots.keySet().iterator().next();
+                    try {
+                        System.out.println(myAnnot.getContents());
+                    } catch (PDFNetException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    // This is how I got the xfdf that I pasted above
+                    try {
+                        PDFViewCtrl pdfviewctrl = mPdfViewCtrlTabHostFragment.getPdfViewCtrl();
+                        pdfviewctrl.docLockRead();
+                        FDFDoc fdf = pdfviewctrl.getDoc().fdfExtract(PDFDoc.e_annots_only);
+                        pdfviewctrl.docUnlockRead();
+                        String result = fdf.saveAsXFDF();
+                        // System.out.println(result);
+                    } catch (PDFNetException e) {
+                        throw new RuntimeException(e);
+                    }
+
+
                 }
 
                 @Override
